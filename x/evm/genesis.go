@@ -97,3 +97,30 @@ func ExportGenesis(ctx sdk.Context, k *keeper.Keeper, ak types.AccountKeeper) *t
 		Params:   k.GetParams(ctx),
 	}
 }
+
+// ExportGenesisEvmAccounts exports genesis state of accounts in evm module
+func ExportGenesisEvmAccounts(ctx sdk.Context, k *keeper.Keeper, ak types.AccountKeeper) []types.GenesisAccount {
+	var genesisAccounts []types.GenesisAccount
+	allAccounts := ak.GetAllAccounts(ctx)
+
+	for _, account := range allAccounts {
+		ethAccount, ok := account.(ethermint.EthAccountI)
+		if !ok {
+			continue
+		}
+
+		addr := ethAccount.EthAddress()
+
+		storage := k.GetAccountStorage(ctx, addr)
+
+		genAccount := types.GenesisAccount{
+			Address: addr.String(),
+			Code:    common.Bytes2Hex(k.GetCode(ctx, ethAccount.GetCodeHash())),
+			Storage: storage,
+		}
+
+		genesisAccounts = append(genesisAccounts, genAccount)
+	}
+
+	return genesisAccounts
+}
