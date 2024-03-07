@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"sync"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -179,12 +180,14 @@ func (b *Backend) TendermintBlockByNumber(blockNum rpctypes.BlockNumber) (*tmrpc
 
 var (
 	blockCache = cache.New(5*time.Minute, 10*time.Minute)
+	bcm        = sync.Mutex{}
 )
 
 // TendermintBlockResultByNumber returns a Tendermint-formatted block result
 // by block number
 func (b *Backend) TendermintBlockResultByNumber(height *int64) (*tmrpctypes.ResultBlockResults, error) {
 	h := fmt.Sprintf("%d", *height)
+	defer bcm.Lock()
 	if block, exist := blockCache.Get(h); exist {
 		return block.(*tmrpctypes.ResultBlockResults), nil
 	}
@@ -194,7 +197,7 @@ func (b *Backend) TendermintBlockResultByNumber(height *int64) (*tmrpctypes.Resu
 		return res, err
 	}
 
-	blockCache.Set(h, res, 0)
+	blockCache.SetDefault(h, res)
 	return res, nil
 }
 
