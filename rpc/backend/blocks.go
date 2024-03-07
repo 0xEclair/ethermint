@@ -178,7 +178,7 @@ func (b *Backend) TendermintBlockByNumber(blockNum rpctypes.BlockNumber) (*tmrpc
 }
 
 var (
-	blockCache = cache.New(6*time.Hour, 24*time.Hour)
+	blockCache = cache.New(5*time.Minute, 10*time.Minute)
 )
 
 // TendermintBlockResultByNumber returns a Tendermint-formatted block result
