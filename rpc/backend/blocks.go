@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
@@ -14,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 	rpctypes "github.com/evmos/ethermint/rpc/types"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	tmrpctypes "github.com/tendermint/tendermint/rpc/core/types"
 	"google.golang.org/grpc"
@@ -175,10 +177,25 @@ func (b *Backend) TendermintBlockByNumber(blockNum rpctypes.BlockNumber) (*tmrpc
 	return resBlock, nil
 }
 
+var (
+	blockCache = cache.New(6*time.Hour, 24*time.Hour)
+)
+
 // TendermintBlockResultByNumber returns a Tendermint-formatted block result
 // by block number
 func (b *Backend) TendermintBlockResultByNumber(height *int64) (*tmrpctypes.ResultBlockResults, error) {
-	return b.clientCtx.Client.BlockResults(b.ctx, height)
+	h := fmt.Sprintf("%d", *height)
+	if block, exist := blockCache.Get(h); exist {
+		return block.(*tmrpctypes.ResultBlockResults), nil
+	}
+
+	res, err := b.clientCtx.Client.BlockResults(b.ctx, height)
+	if err != nil {
+		return res, err
+	}
+
+	blockCache.Set(h, res, 0)
+	return res, nil
 }
 
 // TendermintBlockByHash returns a Tendermint-formatted block by block number
