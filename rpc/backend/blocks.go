@@ -187,9 +187,7 @@ var (
 // by block number
 func (b *Backend) TendermintBlockResultByNumber(height *int64) (*tmrpctypes.ResultBlockResults, error) {
 	h := fmt.Sprintf("%d", *height)
-	bcm.Lock()
 	if block, exist := blockCache.Get(h); exist {
-		bcm.Unlock()
 		bk := block.(tmrpctypes.ResultBlockResults)
 		return &bk, nil
 	}
@@ -199,6 +197,7 @@ func (b *Backend) TendermintBlockResultByNumber(height *int64) (*tmrpctypes.Resu
 		return res, err
 	}
 
+	bcm.Lock()
 	blockCache.SetDefault(h, *res)
 	bcm.Unlock()
 	return res, nil
