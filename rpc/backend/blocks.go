@@ -177,15 +177,14 @@ func (b *Backend) TendermintBlockByNumber(blockNum rpctypes.BlockNumber) (*tmrpc
 }
 
 var (
-	blockCache = make(map[int64]*tmrpctypes.ResultBlockResults)
-	bcm        = sync.Mutex{}
+	blockCache = sync.Map{}
 )
 
 // TendermintBlockResultByNumber returns a Tendermint-formatted block result
 // by block number
 func (b *Backend) TendermintBlockResultByNumber(height *int64) (*tmrpctypes.ResultBlockResults, error) {
-	if block, exist := blockCache[*height]; exist {
-		return block, nil
+	if block, exist := blockCache.Load(*height); exist {
+		return block.(*tmrpctypes.ResultBlockResults), nil
 	}
 
 	res, err := b.clientCtx.Client.BlockResults(b.ctx, height)
@@ -193,9 +192,7 @@ func (b *Backend) TendermintBlockResultByNumber(height *int64) (*tmrpctypes.Resu
 		return res, err
 	}
 
-	bcm.Lock()
-	blockCache[*height] = res
-	bcm.Unlock()
+	blockCache.Store(*height, res)
 	return res, nil
 }
 
