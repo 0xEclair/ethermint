@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/trie"
-	"github.com/evmos/ethermint/cache"
 	rpctypes "github.com/evmos/ethermint/rpc/types"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	"github.com/pkg/errors"
@@ -178,23 +177,7 @@ func (b *Backend) TendermintBlockByNumber(blockNum rpctypes.BlockNumber) (*tmrpc
 // TendermintBlockResultByNumber returns a Tendermint-formatted block result
 // by block number
 func (b *Backend) TendermintBlockResultByNumber(height *int64) (*tmrpctypes.ResultBlockResults, error) {
-	cache.Mutex.Lock()
-	defer cache.Mutex.Unlock()
-	if block, exist := cache.BlockCache.Load(*height); exist {
-		fmt.Printf("using cache %d\n", *height)
-		res := block.(tmrpctypes.ResultBlockResults)
-		return &res, nil
-	}
-
-	res, err := b.clientCtx.Client.BlockResults(b.ctx, height)
-	if err != nil {
-		return res, err
-	}
-
-	cache.BlockCache.Store(*height, *res)
-	fmt.Printf("using http %d\n", *height)
-
-	return res, nil
+	return b.clientCtx.Client.BlockResults(b.ctx, height)
 }
 
 // TendermintBlockByHash returns a Tendermint-formatted block by block number
