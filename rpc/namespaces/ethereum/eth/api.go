@@ -145,7 +145,7 @@ func (e *PublicAPI) BlockNumber() (hexutil.Uint64, error) {
 // GetBlockByNumber returns the block identified by number.
 func (e *PublicAPI) GetBlockByNumber(ethBlockNum rpctypes.BlockNumber, fullTx bool) (map[string]interface{}, error) {
 	e.logger.Debug("eth_getBlockByNumber", "number", ethBlockNum, "full", fullTx)
-	return e.backend.GetBlockByNumber(ethBlockNum, fullTx)
+	return nil, nil
 }
 
 // GetBlockByHash returns the block identified by hash.
