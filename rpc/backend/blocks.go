@@ -178,6 +178,8 @@ func (b *Backend) TendermintBlockByNumber(blockNum rpctypes.BlockNumber) (*tmrpc
 // TendermintBlockResultByNumber returns a Tendermint-formatted block result
 // by block number
 func (b *Backend) TendermintBlockResultByNumber(height *int64) (*tmrpctypes.ResultBlockResults, error) {
+	cache.Mutex.Lock()
+	defer cache.Mutex.Unlock()
 	if block, exist := cache.BlockCache.Load(*height); exist {
 		fmt.Printf("using cache %d\n", *height)
 		return block.(*tmrpctypes.ResultBlockResults), nil
