@@ -3,20 +3,23 @@ package backend
 import (
 	"bytes"
 	"fmt"
+	"math/big"
+	"strconv"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/trie"
-	rpctypes "github.com/evmos/ethermint/rpc/types"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	"github.com/pkg/errors"
 	tmrpctypes "github.com/tendermint/tendermint/rpc/core/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
-	"math/big"
-	"strconv"
+
+	"github.com/evmos/ethermint/cache"
+	rpctypes "github.com/evmos/ethermint/rpc/types"
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
 )
 
 // BlockNumber returns the current block number in abci app state. Because abci
@@ -177,7 +180,20 @@ func (b *Backend) TendermintBlockByNumber(blockNum rpctypes.BlockNumber) (*tmrpc
 // TendermintBlockResultByNumber returns a Tendermint-formatted block result
 // by block number
 func (b *Backend) TendermintBlockResultByNumber(height *int64) (*tmrpctypes.ResultBlockResults, error) {
-	return b.clientCtx.Client.BlockResults(b.ctx, height)
+	cache.BlockCacheMutex.Lock()
+	defer cache.BlockCacheMutex.Unlock()
+
+	if res, ok := cache.BlockCache[*height]; ok {
+		return res, nil
+	}
+
+	res, err := b.clientCtx.Client.BlockResults(b.ctx, height)
+	if err != nil {
+		return nil, err
+	}
+
+	cache.BlockCache[*height] = res
+	return res, nil
 }
 
 // TendermintBlockByHash returns a Tendermint-formatted block by block number
