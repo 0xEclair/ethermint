@@ -182,7 +182,8 @@ func (b *Backend) TendermintBlockResultByNumber(height *int64) (*tmrpctypes.Resu
 	defer cache.Mutex.Unlock()
 	if block, exist := cache.BlockCache.Load(*height); exist {
 		fmt.Printf("using cache %d\n", *height)
-		return block.(*tmrpctypes.ResultBlockResults), nil
+		res := block.(tmrpctypes.ResultBlockResults)
+		return &res, nil
 	}
 
 	res, err := b.clientCtx.Client.BlockResults(b.ctx, height)
@@ -190,7 +191,7 @@ func (b *Backend) TendermintBlockResultByNumber(height *int64) (*tmrpctypes.Resu
 		return res, err
 	}
 
-	cache.BlockCache.Store(*height, res)
+	cache.BlockCache.Store(*height, *res)
 	fmt.Printf("using http %d\n", *height)
 
 	return res, nil
