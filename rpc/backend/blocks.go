@@ -197,6 +197,7 @@ func (b *Backend) TendermintBlockResultByNumber(height *int64) (*tmrpctypes.Resu
 			blockCache[i] = nil
 		}
 		cache.BlockCache = append(cache.BlockCache, blockCache...)
+		b.logger.Info("extended block cache", "height", *height)
 	}
 
 	if res := cache.BlockCache[index]; res != nil {
