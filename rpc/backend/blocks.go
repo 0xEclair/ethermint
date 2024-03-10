@@ -181,15 +181,26 @@ func (b *Backend) TendermintBlockByNumber(blockNum rpctypes.BlockNumber) (*tmrpc
 // TendermintBlockResultByNumber returns a Tendermint-formatted block result
 // by block number
 func (b *Backend) TendermintBlockResultByNumber(height *int64) (*tmrpctypes.ResultBlockResults, error) {
-	if *height < 5044000 {
+	defaultHeight := int64(5050000)
+	if *height < defaultHeight {
 		return nil, errors.New("block result not found for height")
 	}
+
 	start := time.Now()
 	cache.BlockCacheMutex.Lock()
 	defer cache.BlockCacheMutex.Unlock()
 
-	if res, ok := cache.BlockCache[*height]; ok {
-		b.logger.Info("hit block cache", "height", *height, "time", time.Since(start).Milliseconds())
+	index := *height - defaultHeight
+	if int(index) >= len(cache.BlockCache) {
+		blockCache := make([]*tmrpctypes.ResultBlockResults, cache.DefaultCacheSize)
+		for i := 0; i < len(blockCache); i++ {
+			blockCache[i] = nil
+		}
+		cache.BlockCache = append(cache.BlockCache, blockCache...)
+	}
+
+	if res := cache.BlockCache[index]; res != nil {
+		b.logger.Debug("hit block cache", "height", *height, "time", time.Since(start).Milliseconds())
 		return res, nil
 	}
 
@@ -199,7 +210,7 @@ func (b *Backend) TendermintBlockResultByNumber(height *int64) (*tmrpctypes.Resu
 	}
 
 	b.logger.Info("miss block cache", "height", *height, "time", time.Since(start).Milliseconds())
-	cache.BlockCache[*height] = res
+	cache.BlockCache[index] = res
 	return res, nil
 }
 
